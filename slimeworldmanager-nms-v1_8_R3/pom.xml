@@ -16,9 +16,7 @@
         <dependency>
             <groupId>lc.lcspigot</groupId>
             <artifactId>lcspigot</artifactId>
-            <version>1.8.4</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/libs/lcspigot-0.0.7.jar</systemPath>
+            <version>0.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.grinderwolf</groupId>
