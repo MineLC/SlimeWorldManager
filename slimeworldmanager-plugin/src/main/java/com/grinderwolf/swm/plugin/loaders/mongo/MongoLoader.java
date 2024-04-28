@@ -2,7 +2,6 @@ package com.grinderwolf.swm.plugin.loaders.mongo;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.grinderwolf.swm.api.exceptions.UnknownWorldException;
-import com.grinderwolf.swm.api.exceptions.WorldInUseException;
 import com.grinderwolf.swm.plugin.config.DatasourcesConfig;
 import com.grinderwolf.swm.plugin.loaders.LoaderUtils;
 import com.grinderwolf.swm.plugin.loaders.UpdatableLoader;
@@ -108,7 +107,7 @@ public class MongoLoader extends UpdatableLoader {
     }
 
     @Override
-    public byte[] loadWorld(String worldName, boolean readOnly) throws UnknownWorldException, IOException, WorldInUseException {
+    public byte[] loadWorld(String worldName, boolean readOnly) throws UnknownWorldException, IOException {
         try {
             MongoDatabase mongoDatabase = client.getDatabase(database);
             MongoCollection<Document> mongoCollection = mongoDatabase.getCollection(collection);
@@ -116,16 +115,6 @@ public class MongoLoader extends UpdatableLoader {
 
             if (worldDoc == null) {
                 throw new UnknownWorldException(worldName);
-            }
-
-            if (!readOnly) {
-                long lockedMillis = worldDoc.getLong("locked");
-
-                if (System.currentTimeMillis() - lockedMillis <= LoaderUtils.MAX_LOCK_TIME) {
-                    throw new WorldInUseException(worldName);
-                }
-
-                updateLock(worldName, true);
             }
 
             GridFSBucket bucket = GridFSBuckets.create(mongoDatabase, collection);

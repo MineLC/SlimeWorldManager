@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.SQLException;
 import java.util.*;
 
 public class LoaderUtils {
@@ -49,6 +50,8 @@ public class LoaderUtils {
         // File loader
         DatasourcesConfig.FileConfig fileConfig = config.getFileConfig();
         registerLoader("file", new FileLoader(new File(fileConfig.getPath())));
+
+        // Mysql loader
 
         // MongoDB loader
         DatasourcesConfig.MongoDBConfig mongoConfig = config.getMongoDbConfig();
@@ -139,54 +142,75 @@ public class LoaderUtils {
             dataStream.read(chunkBitmask);
             BitSet chunkBitset = BitSet.valueOf(chunkBitmask);
 
+            int compressedChunkDataLength = dataStream.readInt();
             int chunkDataLength = dataStream.readInt();
+            byte[] compressedChunkData = new byte[compressedChunkDataLength];
             byte[] chunkData = new byte[chunkDataLength];
 
-            dataStream.read(chunkData);
+            dataStream.read(compressedChunkData);
 
             // Tile Entities
+            int compressedTileEntitiesLength = dataStream.readInt();
             int tileEntitiesLength = dataStream.readInt();
+            byte[] compressedTileEntities = new byte[compressedTileEntitiesLength];
             byte[] tileEntities = new byte[tileEntitiesLength];
 
-            dataStream.read(tileEntities);
+            dataStream.read(compressedTileEntities);
 
             // Entities
+            byte[] compressedEntities = new byte[0];
             byte[] entities = new byte[0];
 
             if (version >= 3) {
                 boolean hasEntities = dataStream.readBoolean();
 
                 if (hasEntities) {
+                    int compressedEntitiesLength = dataStream.readInt();
                     int entitiesLength = dataStream.readInt();
+                    compressedEntities = new byte[compressedEntitiesLength];
                     entities = new byte[entitiesLength];
 
-                    dataStream.read(entities);
+                    dataStream.read(compressedEntities);
                 }
             }
 
             // Extra NBT tag
+            byte[] compressedExtraTag = new byte[0];
             byte[] extraTag = new byte[0];
 
             if (version >= 2) {
+                int compressedExtraTagLength = dataStream.readInt();
                 int extraTagLength = dataStream.readInt();
+                compressedExtraTag = new byte[compressedExtraTagLength];
                 extraTag = new byte[extraTagLength];
 
-                dataStream.read(extraTag);
+                dataStream.read(compressedExtraTag);
             }
 
             // World Map NBT tag
+            byte[] compressedMapsTag = new byte[0];
             byte[] mapsTag = new byte[0];
 
             if (version >= 7) {
+                int compressedMapsTagLength = dataStream.readInt();
                 int mapsTagLength = dataStream.readInt();
+                compressedMapsTag = new byte[compressedMapsTagLength];
                 mapsTag = new byte[mapsTagLength];
 
-                dataStream.read(mapsTag);
+                dataStream.read(compressedMapsTag);
             }
 
             if (dataStream.read() != -1) {
                 throw new CorruptedWorldException(worldName);
             }
+
+            // Data decompression
+            Zstd.decompress(chunkData, compressedChunkData);
+            Zstd.decompress(tileEntities, compressedTileEntities);
+            Zstd.decompress(entities, compressedEntities);
+            Zstd.decompress(extraTag, compressedExtraTag);
+            Zstd.decompress(mapsTag, compressedMapsTag);
+
             // Chunk deserialization
             Map<Long, SlimeChunk> chunks = readChunks(worldVersion, version, worldName, minX, minZ, width, depth, chunkBitset, chunkData);
 

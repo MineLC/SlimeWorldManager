@@ -24,6 +24,7 @@
             <groupId>lc.lcspigot</groupId>
             <artifactId>lcspigot</artifactId>
             <version>0.1.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.grinderwolf</groupId>

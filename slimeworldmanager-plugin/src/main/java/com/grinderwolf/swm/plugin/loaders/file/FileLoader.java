@@ -1,7 +1,6 @@
 package com.grinderwolf.swm.plugin.loaders.file;
 
 import com.grinderwolf.swm.api.exceptions.UnknownWorldException;
-import com.grinderwolf.swm.api.exceptions.WorldInUseException;
 import com.grinderwolf.swm.api.loaders.SlimeLoader;
 import com.grinderwolf.swm.plugin.log.Logging;
 
@@ -39,7 +38,7 @@ public class FileLoader implements SlimeLoader {
     }
 
     @Override
-    public byte[] loadWorld(String worldName, boolean readOnly) throws UnknownWorldException, IOException, WorldInUseException {
+    public byte[] loadWorld(String worldName, boolean readOnly) throws UnknownWorldException, IOException {
         if (!worldExists(worldName)) {
             throw new UnknownWorldException(worldName);
         }
@@ -53,18 +52,6 @@ public class FileLoader implements SlimeLoader {
             }
 
         });
-
-        if (!readOnly) {
-            FileChannel channel = file.getChannel();
-
-            try {
-                if (channel.tryLock() == null) {
-                    throw new WorldInUseException(worldName);
-                }
-            } catch (OverlappingFileLockException ex) {
-                throw new WorldInUseException(worldName);
-            }
-        }
 
         if (file.length() > Integer.MAX_VALUE) {
             throw new IndexOutOfBoundsException("World is too big!");
